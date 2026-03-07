@@ -76,7 +76,7 @@ class FriendsScreen extends StatelessWidget {
                                 ),
                               ),
                               Text(
-                                "Status...",
+                                "Status...==",
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Color.fromARGB(255, 179, 179, 179),
