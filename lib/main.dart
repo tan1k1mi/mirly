@@ -1,74 +1,100 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:mirly/examples/bicycle_page.dart';
-import 'package:mirly/examples/circle_map_object_page.dart';
-import 'package:mirly/examples/clusterized_placemark_collection_page.dart';
-import 'package:mirly/examples/driving_page.dart';
-import 'package:mirly/examples/map_controls_page.dart';
-import 'package:mirly/examples/map_object_collection_page.dart';
-import 'package:mirly/examples/placemark_map_object_page.dart';
-import 'package:mirly/examples/polygon_map_object_page.dart';
-import 'package:mirly/examples/polyline_map_object_page.dart';
-import 'package:mirly/examples/reverse_search_page.dart';
-import 'package:mirly/examples/search_page.dart';
-import 'package:mirly/examples/suggest_page.dart';
-import 'package:mirly/examples/user_layer_page.dart';
-import 'package:mirly/examples/widgets/map_page.dart';
+import 'package:mirly/screens/friends_screen.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 
 void main() {
-  AndroidYandexMap.useAndroidViewSurface = false;
-  runApp(const MaterialApp(home: MainPage()));
+  runApp(const MyApp());
 }
 
-const List<MapPage> _allPages = <MapPage>[
-  MapControlsPage(),
-  ClusterizedPlacemarkCollectionPage(),
-  MapObjectCollectionPage(),
-  PlacemarkMapObjectPage(),
-  PolylineMapObjectPage(),
-  PolygonMapObjectPage(),
-  CircleMapObjectPage(),
-  UserLayerPage(),
-  SuggestionsPage(),
-  SearchPage(),
-  ReverseSearchPage(),
-  BicyclePage(),
-  DrivingPage(),
-];
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
-class MainPage extends StatelessWidget {
-  const MainPage({super.key});
-
-  void _pushPage(BuildContext context, MapPage page) {
-    Navigator.push(
-      context,
-      MaterialPageRoute<void>(
-        builder: (_) => Scaffold(
-          appBar: AppBar(title: Text(page.title)),
-          body: Container(padding: const EdgeInsets.all(8), child: page),
-        ),
-      ),
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      home: MapScreen(),
+      debugShowCheckedModeBanner: false,
     );
+  }
+}
+
+class MapScreen extends StatefulWidget {
+  const MapScreen({super.key});
+
+  @override
+  State<MapScreen> createState() => _MapScreenState();
+}
+
+class _MapScreenState extends State<MapScreen> {
+  final mapControllerCompleter = Completer<YandexMapController>();
+
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('YandexMap examples')),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              child: YandexMap(),
+      body: Stack(
+        children: [
+          YandexMap(
+            onMapCreated: (controller) {
+              mapControllerCompleter.complete(controller);
+            },
+          ),
+
+          Align(
+            alignment: Alignment.topCenter,
+            child: SafeArea(
+              child: Padding(
+                padding: EdgeInsets.only(top: 10),
+                child: Text(
+                  "Mirly",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
             ),
           ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _allPages.length,
-              itemBuilder: (_, int index) => ListTile(
-                title: Text(_allPages[index].title),
-                onTap: (() => _pushPage(context, _allPages[index])),
+
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              margin: EdgeInsets.all(16),
+              child: BottomNavigationBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                selectedItemColor: const Color.fromARGB(255, 12, 12, 12),
+                unselectedItemColor: const Color.fromARGB(255, 29, 29, 29),
+                currentIndex: _selectedIndex,
+                onTap: (index) {
+                  switch (index) {
+                    case 0:
+                      break;
+                    case 1:
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => FriendsScreen()),
+                      );
+                      break;
+                  }
+                },
+                items: const [
+                  BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Map'),
+                  BottomNavigationBarItem(
+                    icon: Icon(Icons.people),
+                    label: 'Friends',
+                  ),
+                ],
+                type: BottomNavigationBarType.fixed,
               ),
             ),
           ),
