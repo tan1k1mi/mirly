@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "368573121215",
+    "project_id": "mirly-4c725",
+    "storage_bucket": "mirly-4c725.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:368573121215:android:09dac771c33e71e128bc0a",
+        "android_client_info": {
+          "package_name": "com.example.mirly"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAm4ssC3FO80rYwKDFnuMhK4M8N4_S5AA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
