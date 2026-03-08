@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mirly/widgets/bottom_navigation_bar.dart';
+import 'package:mirly/widgets/modal_bottom_sheet.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 import '../models/map_point.dart';
@@ -16,7 +17,7 @@ class _MapScreenState extends State<MapScreen> {
   late final YandexMapController _mapController;
   var _mapZoom = 0.0;
   CameraPosition? _userLocation;
-  int _selectedIndex = 0; // Для панели навигации
+  int _selectedIndex = 0;
 
   @override
   void dispose() {
@@ -34,18 +35,36 @@ class _MapScreenState extends State<MapScreen> {
               _mapController = controller;
               await _initLocationLayer();
             },
-            onCameraPositionChanged: (cameraPosition, _, __) {
-              setState(() {
-                _mapZoom = cameraPosition.zoom;
-              });
+
+            onMapTap: (Point point) {
+              final latitude = point.latitude;
+              final longitude = point.longitude;
+
+              print('Latitude: $latitude');
+              print('Longitude: $longitude');
+
+              showModalBottomSheet(
+                context: context,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (context) {
+                  return CreateEventSheet(
+                    latitude: latitude,
+                    longitude: longitude,
+                  );
+                },
+              );
             },
+
             mapObjects: _getPlacemarkObjects(context),
+
             onUserLocationAdded: (view) async {
               _userLocation = await _mapController.getUserCameraPosition();
               if (_userLocation != null) {
                 await _mapController.moveCamera(
                   CameraUpdate.newCameraPosition(
-                    _userLocation!.copyWith(zoom: 10),
+                    _userLocation!.copyWith(zoom: 15),
                   ),
                   animation: const MapAnimation(
                     type: MapAnimationType.linear,
@@ -57,7 +76,6 @@ class _MapScreenState extends State<MapScreen> {
             },
           ),
 
-          // Нижняя панель навигации
           Align(
             alignment: Alignment.bottomCenter,
             child: AppBottomNavigation(
@@ -69,7 +87,6 @@ class _MapScreenState extends State<MapScreen> {
 
                 switch (index) {
                   case 0:
-                    // Уже на карте
                     break;
                   case 1:
                     Navigator.push(
