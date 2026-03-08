@@ -88,7 +88,7 @@ class _MapScreenState extends State<MapScreen> {
                   }
                 },
                 items: const [
-                  BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Map'),
+                  BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.people),
                     label: 'Friends',
