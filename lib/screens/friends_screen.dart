@@ -1,40 +1,85 @@
 import 'package:flutter/material.dart';
+import 'package:mirly/models/friend_model.dart';
+import 'package:mirly/models/user_model.dart';
+import 'package:mirly/widgets/friend_widget.dart';
 
-class FriendsScreen extends StatelessWidget {
+class FriendsScreen extends StatefulWidget {
+  const FriendsScreen({super.key});
+
+  @override
+  State<FriendsScreen> createState() => _FriendsScreenState();
+}
+
+class _FriendsScreenState extends State<FriendsScreen> {
+  User? user;
+  List<Friend> friends = [];
+
+  @override
+  void initState() {
+    super.initState();
+    loadData();
+  }
+
+  void loadData() {
+    user = User(
+      id: '1',
+      username: "UserName",
+      pops: 0,
+      avatarUrl: '',
+      status: 'Hello',
+      friends: [
+        Friend(id: '2', username: 'Friend 1', avatarUrl: '', status: 'Online'),
+        Friend(
+          id: '3',
+          username: 'Friend 2',
+          avatarUrl: '',
+          status: 'Sleeping',
+        ),
+      ],
+    );
+
+    friends = user!.friends;
+
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color.fromARGB(255, 10, 10, 10),
-      appBar: new AppBar(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(5),
+          preferredSize: Size.fromHeight(0.5),
           child: Container(height: 0.5, color: Color.fromARGB(255, 87, 87, 87)),
         ),
-        automaticallyImplyLeading: false,
-        backgroundColor: Color.fromARGB(0, 10, 10, 10),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "UserName",
-                  style: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
-                ),
-                Text(
-                  "10 Pops",
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color.fromARGB(255, 179, 179, 179),
+            if (user != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(user!.username, style: TextStyle(color: Colors.white)),
+                  Text(
+                    "${user!.pops} Pops",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color.fromARGB(255, 179, 179, 179),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            Icon(
-              Icons.photo_camera,
-              color: Color.fromARGB(255, 255, 255, 255),
-              size: 47,
+                ],
+              ),
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: Color.fromARGB(255, 40, 40, 40),
+              backgroundImage: user!.avatarUrl.isNotEmpty
+                  ? NetworkImage(user!.avatarUrl)
+                  : null,
+              child: user!.avatarUrl.isEmpty
+                  ? Icon(Icons.person, color: Colors.white)
+                  : null,
             ),
           ],
         ),
@@ -47,103 +92,34 @@ class FriendsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "2 Friends",
+                  "${friends.length} Friends",
                   style: TextStyle(
                     fontSize: 20,
                     color: Color.fromARGB(255, 179, 179, 179),
                   ),
                 ),
-                Container(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.photo_camera,
-                            color: Color.fromARGB(255, 255, 255, 255),
-                            size: 60,
-                          ),
-                          SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "FriendName 1",
-                                style: TextStyle(
-                                  color: Color.fromARGB(255, 255, 255, 255),
-                                  fontSize: 17,
-                                ),
-                              ),
-                              Text(
-                                "Status...==",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Color.fromARGB(255, 179, 179, 179),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: Icon(
-                          Icons.more_horiz,
-                          color: Color.fromARGB(255, 179, 179, 179),
-                          size: 40,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.photo_camera,
-                            color: Color.fromARGB(255, 255, 255, 255),
-                            size: 60,
-                          ),
-                          SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "FriendName 2",
-                                style: TextStyle(
-                                  color: Color.fromARGB(255, 255, 255, 255),
-                                  fontSize: 17,
-                                ),
-                              ),
-                              Text(
-                                "Status...",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Color.fromARGB(255, 179, 179, 179),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: Icon(
-                          Icons.more_horiz,
-                          color: Color.fromARGB(255, 179, 179, 179),
-                          size: 40,
-                        ),
-                      ),
-                    ],
+
+                SizedBox(height: 10),
+
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: friends.length,
+                    itemBuilder: (context, index) {
+                      final friend = friends[index];
+
+                      return FriendWidget(
+                        friend: friend,
+                        onMore: () {
+                          print("More clicked: ${friend.username}");
+                        },
+                      );
+                    },
                   ),
                 ),
               ],
             ),
           ),
+
           Positioned(
             bottom: 30,
             left: 0,
