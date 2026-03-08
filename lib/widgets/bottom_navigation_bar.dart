@@ -41,7 +41,7 @@ class AppBottomNavigation extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildItem(Icons.home, 0),
-          _buildItem(Icons.people, 1),
+          _buildItem(Icons.menu_open_rounded, 1),
           _buildItem(Icons.chat, 2),
           _buildItem(Icons.location_on, 3),
         ],

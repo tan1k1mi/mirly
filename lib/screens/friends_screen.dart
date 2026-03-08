@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mirly/models/friend_model.dart';
 import 'package:mirly/models/user_model.dart';
+import 'package:mirly/state/app_state.dart';
 import 'package:mirly/widgets/friend_widget.dart';
 
 class FriendsScreen extends StatefulWidget {
@@ -11,36 +12,12 @@ class FriendsScreen extends StatefulWidget {
 }
 
 class _FriendsScreenState extends State<FriendsScreen> {
-  User? user;
-  List<Friend> friends = [];
+  final user = AppState.currentUser;
+  List<Friend> get friends => user.friends;
 
   @override
   void initState() {
     super.initState();
-    loadData();
-  }
-
-  void loadData() {
-    user = User(
-      id: '1',
-      username: "UserName",
-      pops: 0,
-      avatarUrl: '',
-      status: 'Hello',
-      friends: [
-        Friend(id: '2', username: 'Friend 1', avatarUrl: '', status: 'Online'),
-        Friend(
-          id: '3',
-          username: 'Friend 2',
-          avatarUrl: '',
-          status: 'Sleeping',
-        ),
-      ],
-    );
-
-    friends = user!.friends;
-
-    setState(() {});
   }
 
   @override

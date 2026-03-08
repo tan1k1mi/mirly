@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mirly/widgets/bottom_navigation_bar.dart';
+import 'package:mirly/widgets/category_bottom.dart';
 import 'package:mirly/widgets/modal_bottom_sheet.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
@@ -89,6 +90,19 @@ class _MapScreenState extends State<MapScreen> {
                   case 0:
                     break;
                   case 1:
+                    showModalBottomSheet(
+                      context: context,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      builder: (context) {
+                        return CategoryBottom();
+                      },
+                    );
+                    break;
+                  case 2:
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => FriendsScreen()),
