@@ -7,17 +7,16 @@ version: 1.0.0+1
 environment:
   sdk: '>=3.0.0 <4.0.0'
 
-dependencies: # ЕДИНСТВЕННАЯ СЕКЦИЯ DEPENDENCIES
+dependencies:
   flutter:
     sdk: flutter
   yandex_mapkit: ^3.2.0
   geolocator: ^9.0.2
   cupertino_icons: ^1.0.8
   permission_handler: ^12.0.1
-  firebase_core: ^2.27.0 # Теперь эти пакеты правильно выровнены под 'dependencies:'
+  firebase_core: ^2.27.0 
   cloud_firestore: ^4.15.7
   firebase_analytics: ^10.10.0
-
 
 dev_dependencies:
   flutter_test:
@@ -26,3 +25,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - lib/assets/

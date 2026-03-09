@@ -21,13 +21,14 @@ class MapPoint {
   // Фабричный конструктор для создания MapPoint из DocumentSnapshot Firestore
   factory MapPoint.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+
     return MapPoint(
       id: doc.id,
-      name: data['name'] as String,
-      latitude: (data['latitude'] as num).toDouble(), // Приводим к double
-      longitude: (data['longitude'] as num).toDouble(), // Приводим к double
-      createdBy: data['createdBy'] as String,
-      timestamp: data['timestamp'] as Timestamp,
+      name: data['name'] ?? '',
+      latitude: (data['latitude'] as num).toDouble(),
+      longitude: (data['longitude'] as num).toDouble(),
+      createdBy: data['createdBy'] ?? 'unknown',
+      timestamp: data['timestamp'] ?? Timestamp.now(),
     );
   }
 

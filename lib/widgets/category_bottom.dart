@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mirly/models/user_model.dart';
 import 'package:mirly/state/app_state.dart';
 
 class CategoryBottom extends StatefulWidget {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mirly/models/friend_model.dart';
-import 'package:mirly/models/user_model.dart';
 import 'package:mirly/state/app_state.dart';
 import 'package:mirly/widgets/friend_widget.dart';
 

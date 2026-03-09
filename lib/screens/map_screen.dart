@@ -1,20 +1,16 @@
-// lib/screens/map_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:mirly/widgets/bottom_navigation_bar.dart';
 import 'package:mirly/widgets/category_bottom.dart';
 import 'package:mirly/widgets/modal_bottom_sheet.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
-import '../models/map_point.dart'; // Импорт вашей модели MapPoint
-import 'package:mirly/services/firestore_service.dart'; // Импорт нашего сервиса Firestore
-import 'dart:math'; // <--- Добавил импорт для min и max
+import '../models/map_point.dart';
+import 'package:mirly/services/firestore_service.dart';
+import 'dart:math';
 
-// --- Заглушки для других экранов, если они еще не реализованы ---
-// Убедитесь, что у вас есть реальные файлы для FriendsScreen и EventsListScreen.
-// Если они есть, то эти заглушки можно удалить.
 class FriendsScreen extends StatelessWidget {
   const FriendsScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -26,6 +22,7 @@ class FriendsScreen extends StatelessWidget {
 
 class EventsListScreen extends StatelessWidget {
   const EventsListScreen({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,9 +31,7 @@ class EventsListScreen extends StatelessWidget {
     );
   }
 }
-// --- Конец заглушек ---
 
-// --- Виджет для отображения деталей точки на карте при нажатии ---
 class _ModalBodyView extends StatelessWidget {
   final MapPoint point;
 
@@ -62,10 +57,7 @@ class _ModalBodyView extends StatelessWidget {
               'Время создания: ${point.timestamp.toDate().toLocal().toString().split('.')[0]}'),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Закрыть модальное окно
-              // Дополнительные действия, например, навигация к деталям события
-            },
+            onPressed: () => Navigator.pop(context),
             child: const Text('Закрыть'),
           ),
         ],
@@ -73,10 +65,10 @@ class _ModalBodyView extends StatelessWidget {
     );
   }
 }
-// --- Конец виджета _ModalBodyView ---
 
 class MapScreen extends StatefulWidget {
   final MapPoint? selectedPoint;
+
   const MapScreen({super.key, this.selectedPoint});
 
   @override
@@ -85,27 +77,9 @@ class MapScreen extends StatefulWidget {
 
 class _MapScreenState extends State<MapScreen> {
   late YandexMapController _mapController;
-  CameraPosition? _userLocation;
   int _selectedIndex = 0;
 
-  List<PlacemarkMapObject> _mapObjects = [];
-
-  // Контроллер карты теперь инициализируется в onMapCreated
-  // и не требует вызова dispose в initState, так как onMapCreated
-  // может вызываться несколько раз при горячей перезагрузке,
-  // а YandexMapController должен быть один на виджет.
-  // Dispose будет вызван, когда виджет будет удален из дерева.
-  @override
-  void dispose() {
-    // В случае с late YandexMapController, создаваемым в onMapCreated,
-    // явный dispose здесь может быть излишним или даже приводить к ошибкам,
-    // если контроллер не был полностью инициализирован или уже утилизирован самой картой.
-    // Однако, для надежности, если вы уверены, что контроллер всегда инициализируется,
-    // его можно вызывать. Но чаще всего, если контроллер управляется самим виджетом карты,
-    // явный dispose не требуется. Я закомментировал его для безопасности.
-    // _mapController.dispose();
-    super.dispose();
-  }
+  List<MapObject> _mapObjects = [];
 
   @override
   Widget build(BuildContext context) {
@@ -115,17 +89,20 @@ class _MapScreenState extends State<MapScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.center_focus_strong),
-            onPressed: () {
-              if (_mapObjects.isNotEmpty) {
-                _moveToAllPoints(_mapObjects);
-              } else {
+            onPressed: () async {
+              final points = await getPointsStream().first;
+
+              if (points.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Нет событий для отображения')),
+                  const SnackBar(content: Text('Нет событий')),
                 );
+                return;
               }
+
+              final objects = _getCircleObjects(context, points);
+              _moveToAllPoints(objects);
             },
-            tooltip: "Показать все события",
-          ),
+          )
         ],
       ),
       body: Stack(
@@ -135,27 +112,22 @@ class _MapScreenState extends State<MapScreen> {
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return Center(
-                    child: Text('Ошибка загрузки точек: ${snapshot.error}'));
+                  child: Text('Ошибка загрузки точек: ${snapshot.error}'),
+                );
               }
 
-              if (snapshot.connectionState == ConnectionState.waiting) {
+              if (!snapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              final List<MapPoint> firestorePoints = snapshot.data ?? [];
-
-              // Обновляем список объектов карты только если данные изменились
-              if (_mapObjects.length != firestorePoints.length ||
-                  !_areMapObjectsSame(firestorePoints)) {
-                _mapObjects = _getPlacemarkObjects(context, firestorePoints);
-              }
+              final firestorePoints = snapshot.data!;
+              _mapObjects = _getCircleObjects(context, firestorePoints);
 
               return YandexMap(
                 onMapCreated: (controller) async {
-                  _mapController = controller; // Инициализация контроллера
+                  _mapController = controller;
                   await _initLocationLayer();
 
-                  // Логика центрирования карты после ее создания
                   if (widget.selectedPoint != null) {
                     await _mapController.moveCamera(
                       CameraUpdate.newCameraPosition(
@@ -167,35 +139,15 @@ class _MapScreenState extends State<MapScreen> {
                           zoom: 15,
                         ),
                       ),
-                      animation: const MapAnimation(
-                        type: MapAnimationType.linear,
-                        duration: 0.3,
-                      ),
                     );
-                  } else if (firestorePoints.isNotEmpty) {
+                  } else if (_mapObjects.isNotEmpty) {
                     _moveToAllPoints(_mapObjects);
-                  } else {
-                    _userLocation =
-                        await _mapController.getUserCameraPosition();
-                    if (_userLocation != null) {
-                      await _mapController.moveCamera(
-                        CameraUpdate.newCameraPosition(
-                          _userLocation!.copyWith(zoom: 15),
-                        ),
-                        animation: const MapAnimation(
-                          type: MapAnimationType.linear,
-                          duration: 0.3,
-                        ),
-                      );
-                    }
                   }
                 },
+                mapObjects: _mapObjects,
                 onMapTap: (Point point) {
                   final latitude = point.latitude;
                   final longitude = point.longitude;
-
-                  print(
-                      'Нажатие на карту: Latitude: $latitude, Longitude: $longitude');
 
                   showModalBottomSheet(
                     context: context,
@@ -217,11 +169,7 @@ class _MapScreenState extends State<MapScreen> {
                     },
                   );
                 },
-                mapObjects: _mapObjects,
                 onUserLocationAdded: (view) async {
-                  // Эта функция вызывается, когда местоположение пользователя становится доступным.
-                  // Мы уже обработали начальное центрирование в onMapCreated,
-                  // поэтому здесь просто возвращаем представление.
                   return view.copyWith(pin: view.pin.copyWith(opacity: 1));
                 },
               );
@@ -238,28 +186,27 @@ class _MapScreenState extends State<MapScreen> {
 
                 switch (index) {
                   case 0:
-                    // Если уже на главном экране карты, то ничего не делаем.
                     break;
+
                   case 1:
                     showModalBottomSheet(
                       context: context,
                       shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(20),
-                        ),
+                        borderRadius:
+                            BorderRadius.vertical(top: Radius.circular(20)),
                       ),
-                      builder: (context) {
-                        return CategoryBottom();
-                      },
+                      builder: (context) => CategoryBottom(),
                     );
                     break;
+
                   case 2:
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const FriendsScreen()),
                     );
                     break;
-                  case 2:
+
+                  case 3:
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -269,130 +216,84 @@ class _MapScreenState extends State<MapScreen> {
                 }
               },
             ),
-          ),
+          )
         ],
       ),
     );
   }
 
   Future<void> _initLocationLayer() async {
-    final locationPermissionIsGranted =
-        await Permission.location.request().isGranted;
+    final granted = await Permission.location.request().isGranted;
 
-    if (locationPermissionIsGranted) {
+    if (granted) {
       await _mapController.toggleUserLayer(visible: true);
     } else {
-      // Использование WidgetsBinding.instance.addPostFrameCallback
-      // гарантирует, что SnackBar будет показан после завершения построения виджетов.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Нет доступа к местоположению пользователя'),
-          ),
-        );
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Нет доступа к геолокации')),
+      );
     }
   }
 
-  List<PlacemarkMapObject> _getPlacemarkObjects(
+  // Метод для отображения точек в виде кругов
+  List<MapObject> _getCircleObjects(
       BuildContext context, List<MapPoint> points) {
-    return points
-        .map(
-          (point) => PlacemarkMapObject(
-            mapId: MapObjectId(
-                point.id), // Используем ID документа Firestore как mapId
-            point: Point(latitude: point.latitude, longitude: point.longitude),
-            opacity: 1,
-            icon: PlacemarkIcon.single(
-              PlacemarkIconStyle(
-                image: BitmapDescriptor.fromAssetImage(
-                  'assets/icons/map_point.png', // Убедитесь, что у вас есть этот ресурс
-                ),
-                scale: 2,
-              ),
-            ),
-            onTap: (_, __) => showModalBottomSheet(
-              context: context,
-              builder: (context) =>
-                  _ModalBodyView(point: point), // Использование нового виджета
-            ),
-          ),
-        )
-        .toList();
+    return points.map((point) {
+      return CircleMapObject(
+        mapId: MapObjectId(point.id),
+        circle: Circle(
+          center: Point(latitude: point.latitude, longitude: point.longitude),
+          radius: 30, // радиус в метрах
+        ),
+        strokeColor: Colors.blue,
+        strokeWidth: 3,
+        fillColor: Colors.blue.withOpacity(0.5),
+        onTap: (mapPoint, _) {
+          showModalBottomSheet(
+            context: context,
+            builder: (_) => _ModalBodyView(point: point),
+          );
+        },
+      );
+    }).toList();
   }
 
-  // Новая вспомогательная функция для центрирования карты на всех точках
-  Future<void> _moveToAllPoints(List<PlacemarkMapObject> objects) async {
-    if (objects.isEmpty) {
-      // Если точек нет, возможно, стоит центрировать на текущем местоположении пользователя
-      // или на каком-то стандартном месте.
-      _userLocation = await _mapController.getUserCameraPosition();
-      if (_userLocation != null) {
-        await _mapController.moveCamera(
-          CameraUpdate.newCameraPosition(
-            _userLocation!.copyWith(zoom: 15),
-          ),
-          animation: const MapAnimation(
-            type: MapAnimationType.linear,
-            duration: 0.3,
-          ),
-        );
-      }
-      return;
-    }
+  // Центровка на всех точках
+  Future<void> _moveToAllPoints(List<MapObject> objects) async {
+    if (objects.isEmpty) return;
 
     if (objects.length == 1) {
+      final circle = objects.first as CircleMapObject;
       await _mapController.moveCamera(
         CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: objects.first.point,
-            zoom: 15,
-          ),
+          CameraPosition(target: circle.circle.center, zoom: 15),
         ),
-        animation:
-            const MapAnimation(type: MapAnimationType.linear, duration: 0.3),
       );
       return;
     }
 
-    final BoundingBox boundingBox = _calculateBoundingBox(objects);
-    await _mapController.moveCamera(
-      CameraUpdate.newBounds(
-        boundingBox,
-      ),
-      animation: const MapAnimation(
-        type: MapAnimationType.linear,
-        duration: 0.3,
-      ),
-    );
+    final bounds = _calculateBoundingBox(objects);
+    await _mapController.moveCamera(CameraUpdate.newBounds(bounds));
   }
 
-  BoundingBox _calculateBoundingBox(List<PlacemarkMapObject> objects) {
-    double minLat = objects.first.point.latitude;
-    double maxLat = objects.first.point.latitude;
-    double minLon = objects.first.point.longitude;
-    double maxLon = objects.first.point.longitude;
+  BoundingBox _calculateBoundingBox(List<MapObject> objects) {
+    double minLat = double.infinity;
+    double maxLat = -double.infinity;
+    double minLon = double.infinity;
+    double maxLon = -double.infinity;
 
     for (var obj in objects) {
-      minLat = min(minLat, obj.point.latitude);
-      maxLat = max(maxLat, obj.point.latitude);
-      minLon = min(minLon, obj.point.longitude);
-      maxLon = max(maxLon, obj.point.longitude);
-    }
-    return BoundingBox(
-        northEast: Point(latitude: maxLat, longitude: maxLon),
-        southWest: Point(latitude: minLat, longitude: minLon));
-  }
-
-  bool _areMapObjectsSame(List<MapPoint> currentPoints) {
-    if (_mapObjects.length != currentPoints.length) {
-      return false;
-    }
-    for (int i = 0; i < _mapObjects.length; i++) {
-      if (_mapObjects[i].mapId.value != currentPoints[i].id) {
-        return false;
+      if (obj is CircleMapObject) {
+        final point = obj.circle.center;
+        minLat = min(minLat, point.latitude);
+        maxLat = max(maxLat, point.latitude);
+        minLon = min(minLon, point.longitude);
+        maxLon = max(maxLon, point.longitude);
       }
     }
-    return true;
+
+    return BoundingBox(
+      northEast: Point(latitude: maxLat, longitude: maxLon),
+      southWest: Point(latitude: minLat, longitude: minLon),
+    );
   }
 }
