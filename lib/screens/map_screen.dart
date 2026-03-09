@@ -1,12 +1,16 @@
+// Ваш существующий файл с MapScreen (например, lib/screens/map_screen.dart)
+
 import 'package:flutter/material.dart';
 import 'package:mirly/widgets/bottom_navigation_bar.dart';
 import 'package:mirly/widgets/category_bottom.dart';
-import 'package:mirly/widgets/modal_bottom_sheet.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:mirly/widgets/modal_bottom_sheet.dart'; // Предполагаем, что CreateEventSheet здесь
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 import '../models/map_point.dart';
 import 'package:mirly/services/firestore_service.dart';
 import 'dart:math';
+
+import 'package:mirly/widgets/yandex_map_view.dart';
+import 'package:mirly/services/permission_service.dart';
 
 class FriendsScreen extends StatelessWidget {
   const FriendsScreen({Key? key}) : super(key: key);
@@ -66,6 +70,8 @@ class _ModalBodyView extends StatelessWidget {
   }
 }
 
+// --- КОНЕЦ: ОПРЕДЕЛЕНИЯ ВСПОМОГАТЕЛЬНЫХ ВИДЖЕТОВ ---
+
 class MapScreen extends StatefulWidget {
   final MapPoint? selectedPoint;
 
@@ -78,8 +84,9 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   late YandexMapController _mapController;
   int _selectedIndex = 0;
+  List<MapObject> _currentMapObjects = [];
 
-  List<MapObject> _mapObjects = [];
+  final PermissionService _permissionService = PermissionService();
 
   @override
   Widget build(BuildContext context) {
@@ -90,17 +97,13 @@ class _MapScreenState extends State<MapScreen> {
           IconButton(
             icon: const Icon(Icons.center_focus_strong),
             onPressed: () async {
-              final points = await getPointsStream().first;
-
-              if (points.isEmpty) {
+              if (_currentMapObjects.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Нет событий')),
                 );
                 return;
               }
-
-              final objects = _getCircleObjects(context, points);
-              _moveToAllPoints(objects);
+              _moveToAllPoints(_currentMapObjects);
             },
           )
         ],
@@ -121,12 +124,19 @@ class _MapScreenState extends State<MapScreen> {
               }
 
               final firestorePoints = snapshot.data!;
-              _mapObjects = _getCircleObjects(context, firestorePoints);
+              _currentMapObjects = _getCircleObjects(context, firestorePoints);
 
-              return YandexMap(
+              return YandexMapView(
+                mapObjects: _currentMapObjects,
+                selectedPoint: widget.selectedPoint,
                 onMapCreated: (controller) async {
                   _mapController = controller;
-                  await _initLocationLayer();
+                  final granted = await _permissionService
+                      .requestLocationPermission(context);
+
+                  if (granted) {
+                    await _mapController.toggleUserLayer(visible: true);
+                  }
 
                   if (widget.selectedPoint != null) {
                     await _mapController.moveCamera(
@@ -140,12 +150,11 @@ class _MapScreenState extends State<MapScreen> {
                         ),
                       ),
                     );
-                  } else if (_mapObjects.isNotEmpty) {
-                    _moveToAllPoints(_mapObjects);
+                  } else if (_currentMapObjects.isNotEmpty) {
+                    _moveToAllPoints(_currentMapObjects);
                   }
                 },
-                mapObjects: _mapObjects,
-                onMapTap: (Point point) {
+                onMapTap: (point) {
                   final latitude = point.latitude;
                   final longitude = point.longitude;
 
@@ -169,9 +178,7 @@ class _MapScreenState extends State<MapScreen> {
                     },
                   );
                 },
-                onUserLocationAdded: (view) async {
-                  return view.copyWith(pin: view.pin.copyWith(opacity: 1));
-                },
+                onMapObjectsReady: (objects) {},
               );
             },
           ),
@@ -222,19 +229,6 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Future<void> _initLocationLayer() async {
-    final granted = await Permission.location.request().isGranted;
-
-    if (granted) {
-      await _mapController.toggleUserLayer(visible: true);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Нет доступа к геолокации')),
-      );
-    }
-  }
-
-  // Метод для отображения точек в виде кругов
   List<MapObject> _getCircleObjects(
       BuildContext context, List<MapPoint> points) {
     return points.map((point) {
@@ -242,11 +236,11 @@ class _MapScreenState extends State<MapScreen> {
         mapId: MapObjectId(point.id),
         circle: Circle(
           center: Point(latitude: point.latitude, longitude: point.longitude),
-          radius: 30, // радиус в метрах
+          radius: 30,
         ),
         strokeColor: Colors.blue,
         strokeWidth: 3,
-        fillColor: Colors.blue.withOpacity(0.5),
+        fillColor: Colors.blue.withAlpha(128),
         onTap: (mapPoint, _) {
           showModalBottomSheet(
             context: context,
@@ -257,7 +251,6 @@ class _MapScreenState extends State<MapScreen> {
     }).toList();
   }
 
-  // Центровка на всех точках
   Future<void> _moveToAllPoints(List<MapObject> objects) async {
     if (objects.isEmpty) return;
 
@@ -267,12 +260,22 @@ class _MapScreenState extends State<MapScreen> {
         CameraUpdate.newCameraPosition(
           CameraPosition(target: circle.circle.center, zoom: 15),
         ),
+        animation: const MapAnimation(
+          type: MapAnimationType.linear,
+          duration: 0.3,
+        ),
       );
       return;
     }
 
     final bounds = _calculateBoundingBox(objects);
-    await _mapController.moveCamera(CameraUpdate.newBounds(bounds));
+    await _mapController.moveCamera(
+      CameraUpdate.newBounds(bounds),
+      animation: const MapAnimation(
+        type: MapAnimationType.linear,
+        duration: 0.3,
+      ),
+    );
   }
 
   BoundingBox _calculateBoundingBox(List<MapObject> objects) {
