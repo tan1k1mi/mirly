@@ -19,25 +19,25 @@ class _CategoryBottomState extends State<CategoryBottom> {
 
   late List<String> selectedCategories;
   late List<String> availableCategories;
+
   bool isDropdownOpen = false;
 
   @override
   void initState() {
     super.initState();
 
-    selectedCategories = user.categories != null
-        ? List.from(user.categories!)
-        : [];
+    selectedCategories =
+        user.categories != null ? List.from(user.categories!) : [];
 
-    availableCategories = allCategories
-        .where((c) => !selectedCategories.contains(c))
-        .toList();
+    availableCategories =
+        allCategories.where((c) => !selectedCategories.contains(c)).toList();
   }
 
   void addCategory(String category) {
     setState(() {
       selectedCategories.add(category);
       availableCategories.remove(category);
+
       _updateUserCategories();
     });
   }
@@ -46,9 +46,11 @@ class _CategoryBottomState extends State<CategoryBottom> {
     setState(() {
       selectedCategories.remove(category);
       availableCategories.add(category);
+
       availableCategories.sort(
         (a, b) => allCategories.indexOf(a).compareTo(allCategories.indexOf(b)),
       );
+
       _updateUserCategories();
     });
   }
@@ -67,7 +69,7 @@ class _CategoryBottomState extends State<CategoryBottom> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.grey.shade200,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
         ],
@@ -81,13 +83,10 @@ class _CategoryBottomState extends State<CategoryBottom> {
             runSpacing: 8,
             children: [
               ...selectedCategories.map(
-                (category) => GestureDetector(
-                  onTap: () => removeCategory(category),
-                  child: Chip(
-                    label: Text(category),
-                    deleteIcon: Icon(Icons.close),
-                    onDeleted: () => removeCategory(category),
-                  ),
+                (category) => Chip(
+                  label: Text(category),
+                  deleteIcon: const Icon(Icons.close),
+                  onDeleted: () => removeCategory(category),
                 ),
               ),
               GestureDetector(
@@ -96,22 +95,21 @@ class _CategoryBottomState extends State<CategoryBottom> {
                     isDropdownOpen = !isDropdownOpen;
                   });
                 },
-                child: Chip(
-                  label: Icon(Icons.add, color: Colors.black),
-                  backgroundColor: Colors.white,
+                child: const Chip(
+                  label: Icon(Icons.add),
                 ),
               ),
             ],
           ),
           if (isDropdownOpen && availableCategories.isNotEmpty)
             Container(
-              margin: EdgeInsets.only(top: 12),
-              padding: EdgeInsets.all(12),
+              margin: const EdgeInsets.only(top: 12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
-                  BoxShadow(
+                  const BoxShadow(
                     color: Colors.black26,
                     blurRadius: 6,
                     offset: Offset(0, 3),

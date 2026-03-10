@@ -1,7 +1,6 @@
-// lib/widgets/modal_bottom_sheet.dart
-
 import 'package:flutter/material.dart';
 import 'package:mirly/services/firestore_service.dart';
+import 'package:mirly/state/app_state.dart';
 
 class CreateEventSheet extends StatefulWidget {
   final double latitude;
@@ -20,6 +19,10 @@ class CreateEventSheet extends StatefulWidget {
 class _CreateEventSheetState extends State<CreateEventSheet> {
   final TextEditingController _nameController = TextEditingController();
 
+  final user = AppState.currentUser;
+
+  List<String> selectedCategories = [];
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -28,6 +31,8 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final userCategories = user.categories ?? [];
+
     return Container(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -45,34 +50,57 @@ class _CreateEventSheetState extends State<CreateEventSheet> {
               border: OutlineInputBorder(),
             ),
           ),
+          const SizedBox(height: 16),
+          ExpansionTile(
+            title: const Text("Категории"),
+            children: userCategories.map((category) {
+              final selected = selectedCategories.contains(category);
+
+              return CheckboxListTile(
+                title: Text(category),
+                value: selected,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      selectedCategories.add(category);
+                    } else {
+                      selectedCategories.remove(category);
+                    }
+                  });
+                },
+                controlAffinity: ListTileControlAffinity.trailing,
+              );
+            }).toList(),
+          ),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () async {
               final String eventName = _nameController.text.trim();
-              if (eventName.isNotEmpty) {
-                try {
-                  // Здесь вы можете получить ID пользователя из Firebase Authentication
-                  // Например: FirebaseAuth.instance.currentUser?.uid ?? "guest_user"
-                  await addPointToFirestore(
-                    name: eventName,
-                    latitude: widget.latitude,
-                    longitude: widget.longitude,
-                    createdBy:
-                        "guest_user", // <--- Лучше получать из Firebase Auth
-                  );
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Событие "$eventName" создано!')),
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Не удалось создать событие: $e')),
-                  );
-                }
-              } else {
+
+              if (eventName.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text('Пожалуйста, введите название события')),
+                  const SnackBar(content: Text('Введите название события')),
+                );
+                return;
+              }
+
+              try {
+                await addPointToFirestore(
+                  name: eventName,
+                  latitude: widget.latitude,
+                  longitude: widget.longitude,
+                  categories: selectedCategories,
+                  createdBy: "guest_user",
+                );
+
+                Navigator.pop(context);
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Событие "$eventName" создано!')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Ошибка: $e')),
                 );
               }
             },

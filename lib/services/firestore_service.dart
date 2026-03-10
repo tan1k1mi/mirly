@@ -11,6 +11,7 @@ Future<void> addPointToFirestore({
   required double latitude,
   required double longitude,
   String? createdBy, // Снова сделали его параметром
+  required List<String> categories,
 }) async {
   // В идеале, здесь нужно использовать FirebaseAuth.instance.currentUser?.uid
   // для получения ID текущего пользователя.
@@ -26,6 +27,7 @@ Future<void> addPointToFirestore({
       'longitude': longitude,
       'createdBy': finalCreatedBy,
       'timestamp': FieldValue.serverTimestamp(),
+      'categories': categories,
     });
     print(
         "Точка '$name' успешно добавлена в Firestore пользователем $finalCreatedBy!");
