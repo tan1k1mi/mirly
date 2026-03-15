@@ -1,11 +1,6 @@
-// lib/services/firestore_service.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:mirly/models/map_point.dart'; // <--- Добавил импорт вашей модели
+import 'package:mirly/models/map_point.dart';
 
-/// Функция для добавления новой точки в Firestore.
-/// Принимает название, широту, долготу и опциональный ID создателя.
-/// Возвращает Future<void>, так как операция асинхронная.
 Future<void> addPointToFirestore({
   required String name,
   required double latitude,

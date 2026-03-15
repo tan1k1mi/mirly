@@ -1,9 +1,7 @@
-// Ваш существующий файл с MapScreen (например, lib/screens/map_screen.dart)
-
 import 'package:flutter/material.dart';
 import 'package:mirly/widgets/bottom_navigation_bar.dart';
 import 'package:mirly/widgets/category_bottom.dart';
-import 'package:mirly/widgets/modal_bottom_sheet.dart'; // Предполагаем, что CreateEventSheet здесь
+import 'package:mirly/widgets/modal_bottom_sheet.dart';
 import 'package:yandex_mapkit/yandex_mapkit.dart';
 import '../models/map_point.dart';
 import 'package:mirly/services/firestore_service.dart';
@@ -69,8 +67,6 @@ class _ModalBodyView extends StatelessWidget {
     );
   }
 }
-
-// --- КОНЕЦ: ОПРЕДЕЛЕНИЯ ВСПОМОГАТЕЛЬНЫХ ВИДЖЕТОВ ---
 
 class MapScreen extends StatefulWidget {
   final MapPoint? selectedPoint;
