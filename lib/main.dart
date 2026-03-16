@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'package:mirly/screens/register_screen.dart';
 import 'screens/map_screen.dart';
-import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,7 +42,7 @@ class AuthWrapper extends StatelessWidget {
           return const MapScreen();
         }
 
-        return LoginScreen();
+        return RegisterScreen();
       },
     );
   }

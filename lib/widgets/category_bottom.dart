@@ -20,7 +20,9 @@ class _CategoryBottomState extends State<CategoryBottom> {
   late List<String> selectedCategories;
   late List<String> availableCategories;
 
-  bool isDropdownOpen = false;
+  List<String> filteredCategories = [];
+
+  final TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
@@ -31,13 +33,27 @@ class _CategoryBottomState extends State<CategoryBottom> {
 
     availableCategories =
         allCategories.where((c) => !selectedCategories.contains(c)).toList();
+
+    filteredCategories = List.from(availableCategories);
+
+    searchController.addListener(_filterCategories);
+  }
+
+  void _filterCategories() {
+    final query = searchController.text.toLowerCase();
+
+    setState(() {
+      filteredCategories = availableCategories
+          .where((c) => c.toLowerCase().contains(query))
+          .toList();
+    });
   }
 
   void addCategory(String category) {
     setState(() {
       selectedCategories.add(category);
       availableCategories.remove(category);
-
+      filteredCategories.remove(category);
       _updateUserCategories();
     });
   }
@@ -51,6 +67,7 @@ class _CategoryBottomState extends State<CategoryBottom> {
         (a, b) => allCategories.indexOf(a).compareTo(allCategories.indexOf(b)),
       );
 
+      _filterCategories();
       _updateUserCategories();
     });
   }
@@ -62,78 +79,117 @@ class _CategoryBottomState extends State<CategoryBottom> {
 
   @override
   Widget build(BuildContext context) {
-    final double screenWidth = MediaQuery.of(context).size.width;
+    final width = MediaQuery.of(context).size.width;
 
     return Container(
-      width: screenWidth,
+      width: width,
+      height: 420,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
-        ],
+      decoration: const BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ...selectedCategories.map(
-                (category) => Chip(
-                  label: Text(category),
-                  deleteIcon: const Icon(Icons.close),
-                  onDeleted: () => removeCategory(category),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    isDropdownOpen = !isDropdownOpen;
-                  });
-                },
-                child: const Chip(
-                  label: Icon(Icons.add),
-                ),
-              ),
-            ],
-          ),
-          if (isDropdownOpen && availableCategories.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              padding: const EdgeInsets.all(12),
+          Center(
+            child: Container(
+              width: 40,
+              height: 5,
+              margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  const BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 6,
-                    offset: Offset(0, 3),
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+          const Text(
+            "Categories",
+            style: TextStyle(
+              fontSize: 20,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: searchController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: "Search categories...",
+              hintStyle: const TextStyle(color: Colors.white54),
+              prefixIcon: const Icon(Icons.search, color: Colors.white54),
+              filled: true,
+              fillColor: const Color.fromARGB(255, 25, 25, 25),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (selectedCategories.isNotEmpty) ...[
+                    const Text(
+                      "Selected",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: selectedCategories
+                          .map(
+                            (c) => Chip(
+                              label: Text(c),
+                              labelStyle: const TextStyle(color: Colors.white),
+                              deleteIcon:
+                                  const Icon(Icons.close, color: Colors.white),
+                              backgroundColor:
+                                  const Color.fromARGB(255, 30, 30, 30),
+                              onDeleted: () => removeCategory(c),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                    const SizedBox(height: 18),
+                  ],
+                  const Text(
+                    "Available",
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: filteredCategories
+                        .map(
+                          (c) => GestureDetector(
+                            onTap: () => addCategory(c),
+                            child: Chip(
+                              label: Text(c),
+                              labelStyle: const TextStyle(color: Colors.white),
+                              backgroundColor:
+                                  const Color.fromARGB(255, 18, 18, 18),
+                            ),
+                          ),
+                        )
+                        .toList(),
                   ),
                 ],
               ),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: availableCategories
-                    .map(
-                      (category) => GestureDetector(
-                        onTap: () {
-                          addCategory(category);
-                        },
-                        child: Chip(
-                          label: Text(category),
-                          backgroundColor: Colors.grey[300],
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
             ),
+          ),
         ],
       ),
     );

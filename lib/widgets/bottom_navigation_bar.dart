@@ -18,10 +18,11 @@ class AppBottomNavigation extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: Colors.grey.shade200,
+          color: const Color.fromARGB(255, 0, 0, 0),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, size: 28, color: Colors.black),
+        child: Icon(icon,
+            size: 28, color: const Color.fromARGB(255, 255, 255, 255)),
       ),
     );
   }
@@ -34,7 +35,9 @@ class AppBottomNavigation extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+          BoxShadow(
+              color: const Color.fromARGB(0, 0, 0, 0).withOpacity(0.1),
+              blurRadius: 10),
         ],
       ),
       child: Row(
